@@ -50,7 +50,9 @@ static void *taosNetBindUdpPort(void *sarg) {
   struct sockaddr_in server_addr;
   struct sockaddr_in clientAddr;
 
-   if ((serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
+  setThreadName("netBindUdpPort");
+
+  if ((serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
     uError("failed to create UDP socket since %s", strerror(errno));
     return NULL;
   }
@@ -106,12 +108,14 @@ static void *taosNetBindTcpPort(void *sarg) {
   struct sockaddr_in server_addr;
   struct sockaddr_in clientAddr;
 
- STestInfo *pinfo = sarg;
+  STestInfo *pinfo = sarg;
   int32_t    port = pinfo->port;
   SOCKET     serverSocket;
   int32_t    addr_len = sizeof(clientAddr);
   SOCKET     client;
   char       buffer[BUFFER_SIZE];
+
+  setThreadName("netBindTcpPort");
 
   if ((serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
     uError("failed to create TCP socket since %s", strerror(errno));
@@ -539,7 +543,7 @@ static void taosNetTestServer(char *host, int32_t startPort, int32_t pkgLen) {
 }
 
 void taosNetTest(char *role, char *host, int32_t port, int32_t pkgLen) {
-//  tscEmbedded = 1;
+  tscEmbedded = 1;
   if (host == NULL) host = tsLocalFqdn;
   if (port == 0) port = tsServerPort;
   if (pkgLen <= 10) pkgLen = 1000;
@@ -550,6 +554,7 @@ void taosNetTest(char *role, char *host, int32_t port, int32_t pkgLen) {
   } else if (0 == strcmp("server", role)) {
     taosNetTestServer(host, port, pkgLen);
   } else if (0 == strcmp("rpc", role)) {
+    tscEmbedded = 0;
     taosNetTestRpc(host, port, pkgLen);
   } else if (0 == strcmp("sync", role)) {
     taosNetCheckSync(host, port);
@@ -559,5 +564,5 @@ void taosNetTest(char *role, char *host, int32_t port, int32_t pkgLen) {
     taosNetTestStartup(host, port);
   }
 
-//  tscEmbedded = 0;
+  tscEmbedded = 0;
 }

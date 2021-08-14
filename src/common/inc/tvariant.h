@@ -16,8 +16,8 @@
 #ifndef TDENGINE_TVARIANT_H
 #define TDENGINE_TVARIANT_H
 
-#include "tstoken.h"
 #include "tarray.h"
+#include "ttoken.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,6 +52,8 @@ int32_t tVariantCompare(const tVariant* p1, const tVariant* p2);
 int32_t tVariantToString(tVariant *pVar, char *dst);
 
 int32_t tVariantDump(tVariant *pVariant, char *payload, int16_t type, bool includeLengthPrefix);
+
+int32_t tVariantDumpEx(tVariant *pVariant, char *payload, int16_t type, bool includeLengthPrefix, bool *converted, char *extInfo);
 
 int32_t tVariantTypeSetType(tVariant *pVariant, char type);
 

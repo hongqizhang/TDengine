@@ -2,18 +2,18 @@ package com.taosdata.jdbc.rs;
 
 import com.taosdata.jdbc.TSDBError;
 import com.taosdata.jdbc.TSDBErrorNumbers;
+import com.taosdata.jdbc.utils.Utils;
 
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.Calendar;
 
 public class RestfulPreparedStatement extends RestfulStatement implements PreparedStatement {
 
-    private ParameterMetaData parameterMetaData;
+    private final ParameterMetaData parameterMetaData;
     private final String rawSql;
     private Object[] parameters;
     private boolean isPrepared;
@@ -21,16 +21,17 @@ public class RestfulPreparedStatement extends RestfulStatement implements Prepar
     public RestfulPreparedStatement(RestfulConnection conn, String database, String sql) {
         super(conn, database);
         this.rawSql = sql;
+
+        int parameterCnt = 0;
         if (sql.contains("?")) {
-            int parameterCnt = 0;
             for (int i = 0; i < sql.length(); i++) {
                 if ('?' == sql.charAt(i)) {
                     parameterCnt++;
                 }
             }
-            parameters = new Object[parameterCnt];
             this.isPrepared = true;
         }
+        parameters = new Object[parameterCnt];
 
         // build parameterMetaData
         this.parameterMetaData = new RestfulParameterMetaData(parameters);
@@ -43,7 +44,7 @@ public class RestfulPreparedStatement extends RestfulStatement implements Prepar
         if (!isPrepared)
             return executeQuery(this.rawSql);
 
-        final String sql = getNativeSql(this.rawSql);
+        final String sql = Utils.getNativeSql(this.rawSql, this.parameters);
         return executeQuery(sql);
     }
 
@@ -54,33 +55,8 @@ public class RestfulPreparedStatement extends RestfulStatement implements Prepar
         if (!isPrepared)
             return executeUpdate(this.rawSql);
 
-        final String sql = getNativeSql(this.rawSql);
+        final String sql = Utils.getNativeSql(rawSql, this.parameters);
         return executeUpdate(sql);
-    }
-
-    private String getNativeSql(String rawSql) throws SQLException {
-        String sql = rawSql;
-        for (int i = 0; i < parameters.length; ++i) {
-            Object para = parameters[i];
-            if (para != null) {
-                String paraStr;
-                if (para instanceof byte[]) {
-                    paraStr = new String((byte[]) para, Charset.forName("UTF-8"));
-                } else {
-                    paraStr = para.toString();
-                }
-                // if para is timestamp or String or byte[] need to translate ' character
-                if (para instanceof Timestamp || para instanceof String || para instanceof byte[]) {
-                    paraStr = paraStr.replaceAll("'", "\\\\\\\\'");
-                    paraStr = "'" + paraStr + "'";
-                }
-                sql = sql.replaceFirst("[?]", paraStr);
-            } else {
-                sql = sql.replaceFirst("[?]", "NULL");
-            }
-        }
-        clearParameters();
-        return sql;
     }
 
     @Override
@@ -220,8 +196,8 @@ public class RestfulPreparedStatement extends RestfulStatement implements Prepar
     public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
         if (isClosed())
             throw TSDBError.createSQLException(TSDBErrorNumbers.ERROR_STATEMENT_CLOSED);
-        
-        setObject(parameterIndex,x);
+
+        setObject(parameterIndex, x);
     }
 
     @Override
@@ -238,16 +214,13 @@ public class RestfulPreparedStatement extends RestfulStatement implements Prepar
             throw TSDBError.createSQLException(TSDBErrorNumbers.ERROR_STATEMENT_CLOSED);
         if (!isPrepared)
             return execute(this.rawSql);
-        final String sql = getNativeSql(rawSql);
+        final String sql = Utils.getNativeSql(rawSql, this.parameters);
         return execute(sql);
     }
 
     @Override
     public void addBatch() throws SQLException {
-        if (isClosed())
-            throw TSDBError.createSQLException(TSDBErrorNumbers.ERROR_STATEMENT_CLOSED);
-
-        final String sql = getNativeSql(this.rawSql);
+        final String sql = Utils.getNativeSql(rawSql, this.parameters);
         addBatch(sql);
     }
 

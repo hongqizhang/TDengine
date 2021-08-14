@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "taos.h"
-#include "tstoken.h"
+#include "ttoken.h"
 #include "tutil.h"
 
 int main(int argc, char** argv) {
@@ -18,7 +18,7 @@ TEST(testCase, parse_time) {
   deltaToUtcInitOnce();
 
   // window: 1500000001000, 1500002000000
-  // pQuery->interval: interval: 86400000, sliding:3600000
+  // pQueryAttr->interval: interval: 86400000, sliding:3600000
   int64_t key = 1500000001000;
   SInterval interval = {0};
   interval.interval = 86400000;
